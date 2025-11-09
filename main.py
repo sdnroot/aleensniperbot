@@ -228,27 +228,60 @@ def analyze(symbol: str):
         sl, tp1, tp2 = 0.0, 0.0, 0.0
     return AnalyzeOut(symbol=symbol, time=df.index[-1].isoformat(), price=px, rule_signal=rule_sig, ml_pred=ml["pred"], p_up=round(ml["p_up"],3), p_down=round(ml["p_down"],3), decision=decision, sl=round(sl,2), tp1=round(tp1,2), tp2=round(tp2,2))
 
+
 def job_scan_and_alert():
+    """
+    Clean, well-formed scan loop:
+    - for each symbol ensure model exists
+    - call analyze() which returns dict or Pydantic object
+    - check confirmations safely and send telegram only if gated
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     for sym in SYMBOLS:
         try:
+            # ensure model available
             if sym not in MODELS:
-                df = build_dataset(sym, min(LOOKBACK_DAYS,30), INTERVAL)
+                df = build_dataset(sym, min(LOOKBACK_DAYS, 30), INTERVAL)
                 if len(df) > 200:
                     fit_model(sym, df)
+
             res = analyze(sym)
-            if res.decision in ("BUY","SELL"):
-                ts_key = pd.Timestamp(res.time)
-                last_ts = LAST_SIGNAL_TS.get(sym)
-                if last_ts is None or ts_key > last_ts:
-                    text = (f"*{sym}* {res.decision}\\nPrice: {res.price:.2f}\\nRule: {res.rule_signal}  ML: {res.ml_pred}  P(up): {res.p_up:.2f}  P(down): {res.p_down:.2f}\\nSL: {res.sl:.2f}  TP1: {res.tp1:.2f}  TP2: {res.tp2:.2f}\\n{INTERVAL}  {res.time}")
+            # normalize res to dict
+            if hasattr(res, "__dict__"):
+                res = res.__dict__
+        except Exception:
+            # skip symbol on any analysis error
+            continue
+
+        # safe confirmations extraction
+        try:
+            conf = res.get("confirmations", {}) if isinstance(res, dict) else {}
+            count_buy = int(conf.get("count_buy", 0))
+            count_sell = int(conf.get("count_sell", 0))
+        except Exception:
+            count_buy = 0
+            count_sell = 0
+
+        # gated alert: require >=4 confirmations
+        if (count_buy >= 4) or (count_sell >= 4):
+            try:
+                ts_key = pd.Timestamp(res.get("time") or datetime.utcnow().isoformat())
+            except Exception:
+                ts_key = pd.Timestamp(datetime.utcnow())
+            last_ts = LAST_SIGNAL_TS.get(sym)
+            if last_ts is None or ts_key > last_ts:
+                try:
+                    text = (f"*{sym}* {res.get('decision','HOLD')}\n"
+                            f"Price: {float(res.get('price',0)):.2f}\n"
+                            f"Rule: {res.get('rule_signal',0)}  ML: {res.get('ml_pred',0)}  P(up): {res.get('p_up',0.0):.2f}  P(down): {res.get('p_down',0.0):.2f}\n"
+                            f"SL: {float(res.get('sl',0)):.2f}  TP1: {float(res.get('tp1',0)):.2f}  TP2: {float(res.get('tp2',0)):.2f}\n"
+                            f"{INTERVAL}  {res.get('time','')}")
                     loop.run_until_complete(send_telegram(text))
                     LAST_SIGNAL_TS[sym] = ts_key
-        except Exception:
-            pass
-    loop.close()
-
+                except Exception:
+                    # if telegram fails continue
+                    continue
 scheduler = BackgroundScheduler(daemon=True, timezone="UTC")
 scheduler.add_job(job_scan_and_alert, "interval", minutes=SCHEDULE_MINUTES, next_run_time=datetime.utcnow()+timedelta(seconds=5))
 scheduler.start()
@@ -332,3 +365,275 @@ async def ping_telegram():
 def scan_now():
     job_scan_and_alert()
     return {"ok": True}
+
+# === confirmations and sizing helpers ===
+def compute_confirmations(row: pd.Series, ml_pred: Dict[str, float]) -> Dict[str, int | float | bool]:
+    ema_ok_buy  = row["ema_fast"] > row["ema_slow"]
+    ema_ok_sell = row["ema_fast"] < row["ema_slow"]
+    rsi_buy  = row["rsi"] < 30
+    rsi_sell = row["rsi"] > 70
+    macd_buy  = row["macd_hist"] > 0
+    macd_sell = row["macd_hist"] < 0
+    vol_spike = int(row.get("vol_spike", 0)) == 1
+    p_up  = float(ml_pred.get("p_up", 0.0))
+    p_dn  = float(ml_pred.get("p_down", 0.0))
+    ml_buy  = p_up >= 0.55
+    ml_sell = p_dn >= 0.55
+    conf_buy  = [ema_ok_buy,  rsi_buy,  macd_buy,  vol_spike, ml_buy]
+    conf_sell = [ema_ok_sell, rsi_sell, macd_sell, vol_spike, ml_sell]
+    return {
+        "conf_buy": conf_buy,
+        "conf_sell": conf_sell,
+        "count_buy": int(sum(conf_buy)),
+        "count_sell": int(sum(conf_sell)),
+        "p_up": p_up,
+        "p_down": p_dn,
+    }
+
+def position_size_units(entry: float, stop: float, account: float, risk_pct: float) -> float:
+    # returns units of the asset to buy/sell given risk percent of account
+    risk_amt = account * (risk_pct / 100.0)
+    sl_dist = abs(entry - stop)
+    if sl_dist <= 0:
+        return 0.0
+    return risk_amt / sl_dist
+
+# replace analyze to include confirmations and gating
+from fastapi import Query
+
+@app.get("/analyze", response_model=AnalyzeOut)
+def analyze(symbol: str):
+    df = fetch_ohlc(symbol, 5, INTERVAL)
+    if df.empty:
+        return AnalyzeOut(symbol=symbol, time="", price=0.0, rule_signal=0, ml_pred=0, p_up=0.0, p_down=0.0, decision="HOLD", sl=0.0, tp1=0.0, tp2=0.0)
+    df = add_features(df)
+    row = df.iloc[-1]
+    rule_sig = sniper_rule_signal(row)
+    ml = model_predict(symbol, row)
+    conf = compute_confirmations(row, ml)
+    px = float(row["Close"])
+    atr = float(row["atr"])
+    sl_raw, tp_raw = sl_tp_from_atr(px, atr)  # ATR-based distances
+
+    decision = "HOLD"
+    # gate on 5-confirm system: require >=4 confirmations
+    if conf["count_buy"] >= 4:
+        decision = "BUY"
+    elif conf["count_sell"] >= 4:
+        decision = "SELL"
+
+    if decision == "BUY":
+        sl = px - sl_raw
+        tp1 = px + tp_raw
+        tp2 = px + 1.5 * tp_raw
+    elif decision == "SELL":
+        sl = px + sl_raw
+        tp1 = px - tp_raw
+        tp2 = px - 1.5 * tp_raw
+    else:
+        sl, tp1, tp2 = 0.0, 0.0, 0.0
+
+    # pack fields (keep schema; extra details via headers-like keys in response)
+    out = AnalyzeOut(
+        symbol=symbol,
+        time=df.index[-1].isoformat(),
+        price=px,
+        rule_signal=rule_sig,
+        ml_pred=int(ml["pred"]),
+        p_up=round(conf["p_up"], 3),
+        p_down=round(conf["p_down"], 3),
+        decision=decision,
+        sl=round(sl, 2),
+        tp1=round(tp1, 2),
+        tp2=round(tp2, 2),
+    )
+    # attach debug confirmations for clients that read JSON (not enforced by Pydantic model)
+    try:
+        out_dict = out.__dict__
+        out_dict["confirmations"] = {
+            "buy_flags": conf["conf_buy"],
+            "sell_flags": conf["conf_sell"],
+            "count_buy": conf["count_buy"],
+            "count_sell": conf["count_sell"],
+        }
+        return out_dict  # FastAPI will serialize dict directly
+    except Exception:
+        return out
+
+# position sizing endpoint
+@app.get("/size")
+def size(
+    symbol: str,
+    entry: float = Query(...),
+    sl: float = Query(..., description="stop-loss price"),
+    account: float = Query(..., description="account balance in USD"),
+    risk_pct: float = Query(1.0, description="risk percent of account"),
+):
+    units = position_size_units(entry, sl, account, risk_pct)
+    return {"symbol": symbol, "entry": entry, "sl": sl, "account": account, "risk_pct": risk_pct, "units": round(units, 6)}
+from fastapi import Query
+
+def _compute_confirmations(row, ml):
+    ema_ok_buy  = float(row["ema_fast"]) > float(row["ema_slow"])
+    ema_ok_sell = float(row["ema_fast"]) < float(row["ema_slow"])
+    rsi_buy  = float(row["rsi"]) < 30
+    rsi_sell = float(row["rsi"]) > 70
+    macd_buy  = float(row["macd_hist"]) > 0
+    macd_sell = float(row["macd_hist"]) < 0
+    vol_spike = int(row.get("vol_spike", 0)) == 1
+    p_up  = float(ml.get("p_up", 0.0))
+    p_dn  = float(ml.get("p_down", 0.0))
+    ml_buy  = p_up >= 0.55
+    ml_sell = p_dn >= 0.55
+    conf_buy  = [ema_ok_buy,  rsi_buy,  macd_buy,  vol_spike, ml_buy]
+    conf_sell = [ema_ok_sell, rsi_sell, macd_sell, vol_spike, ml_sell]
+    return {"buy": conf_buy, "sell": conf_sell, "cnt_buy": sum(conf_buy), "cnt_sell": sum(conf_sell), "p_up": p_up, "p_down": p_dn}
+
+@app.get("/analyze_strict")
+def analyze_strict(symbol: str):
+    df = fetch_ohlc(symbol, 5, INTERVAL)
+    if df.empty:
+        return {"symbol": symbol, "decision": "HOLD"}
+    df = add_features(df)
+    row = df.iloc[-1]
+    rule_sig = sniper_rule_signal(row)
+    ml = model_predict(symbol, row)
+    c = _compute_confirmations(row, ml)
+    px = float(row["Close"])
+    atr = float(row["atr"])
+    d = "HOLD"
+    if c["cnt_buy"] >= 4:
+        d = "BUY"
+    elif c["cnt_sell"] >= 4:
+        d = "SELL"
+    sl_raw, tp_raw = sl_tp_from_atr(px, atr)
+    if d == "BUY":
+        sl = px - sl_raw
+        tp1 = px + tp_raw
+        tp2 = px + 1.5 * tp_raw
+    elif d == "SELL":
+        sl = px + sl_raw
+        tp1 = px - tp_raw
+        tp2 = px - 1.5 * tp_raw
+    else:
+        sl = tp1 = tp2 = 0.0
+    return {
+        "symbol": symbol,
+        "time": df.index[-1].isoformat(),
+        "price": round(px, 2),
+        "rule_signal": int(rule_sig),
+        "p_up": round(c["p_up"], 3),
+        "p_down": round(c["p_down"], 3),
+        "conf_buy": c["buy"],
+        "conf_sell": c["sell"],
+        "count_buy": int(c["cnt_buy"]),
+        "count_sell": int(c["cnt_sell"]),
+        "decision": d,
+        "sl": round(sl, 2),
+        "tp1": round(tp1, 2),
+        "tp2": round(tp2, 2),
+    }
+
+@app.get("/size")
+def size(symbol: str, entry: float = Query(...), sl: float = Query(...), account: float = Query(...), risk_pct: float = Query(1.0)):
+    risk_amt = account * (risk_pct / 100.0)
+    sl_dist = abs(entry - sl)
+    units = 0.0 if sl_dist <= 0 else risk_amt / sl_dist
+    return {"symbol": symbol, "entry": entry, "sl": sl, "account": account, "risk_pct": risk_pct, "units": round(units, 6)}
+
+@app.post("/scan_now_strict")
+def scan_now_strict():
+    sent = []
+    for sym in SYMBOLS:
+        res = analyze_strict(sym)
+        if res["decision"] in ("BUY","SELL"):
+            txt = f"*{sym}* {res['decision']}\nPrice: {res['price']}\nP(up): {res['p_up']}  P(down): {res['p_down']}\nConf: buy={res['count_buy']} sell={res['count_sell']}\nSL: {res['sl']}  TP1: {res['tp1']}  TP2: {res['tp2']}\n{INTERVAL}  {res['time']}"
+            try:
+                asyncio.get_event_loop().run_until_complete(send_telegram(txt))
+                sent.append(sym)
+            except Exception:
+                pass
+    return {"ok": True, "alerts": sent}
+from fastapi import Query
+
+def _compute_confirmations(row, ml):
+    ema_ok_buy  = float(row["ema_fast"]) > float(row["ema_slow"])
+    ema_ok_sell = float(row["ema_fast"]) < float(row["ema_slow"])
+    rsi_buy  = float(row["rsi"]) < 30
+    rsi_sell = float(row["rsi"]) > 70
+    macd_buy  = float(row["macd_hist"]) > 0
+    macd_sell = float(row["macd_hist"]) < 0
+    vol_spike = int(row.get("vol_spike", 0)) == 1
+    p_up  = float(ml.get("p_up", 0.0))
+    p_dn  = float(ml.get("p_down", 0.0))
+    ml_buy  = p_up >= 0.55
+    ml_sell = p_dn >= 0.55
+    conf_buy  = [ema_ok_buy,  rsi_buy,  macd_buy,  vol_spike, ml_buy]
+    conf_sell = [ema_ok_sell, rsi_sell, macd_sell, vol_spike, ml_sell]
+    return {"buy": conf_buy, "sell": conf_sell, "cnt_buy": sum(conf_buy), "cnt_sell": sum(conf_sell), "p_up": p_up, "p_down": p_dn}
+
+@app.get("/analyze_strict")
+def analyze_strict(symbol: str):
+    df = fetch_ohlc(symbol, 5, INTERVAL)
+    if df.empty:
+        return {"symbol": symbol, "decision": "HOLD"}
+    df = add_features(df)
+    row = df.iloc[-1]
+    rule_sig = sniper_rule_signal(row)
+    ml = model_predict(symbol, row)
+    c = _compute_confirmations(row, ml)
+    px = float(row["Close"])
+    atr = float(row["atr"])
+    d = "HOLD"
+    if c["cnt_buy"] >= 4:
+        d = "BUY"
+    elif c["cnt_sell"] >= 4:
+        d = "SELL"
+    sl_raw, tp_raw = sl_tp_from_atr(px, atr)
+    if d == "BUY":
+        sl = px - sl_raw
+        tp1 = px + tp_raw
+        tp2 = px + 1.5 * tp_raw
+    elif d == "SELL":
+        sl = px + sl_raw
+        tp1 = px - tp_raw
+        tp2 = px - 1.5 * tp_raw
+    else:
+        sl = tp1 = tp2 = 0.0
+    return {
+        "symbol": symbol,
+        "time": df.index[-1].isoformat(),
+        "price": round(px, 2),
+        "rule_signal": int(rule_sig),
+        "p_up": round(c["p_up"], 3),
+        "p_down": round(c["p_down"], 3),
+        "conf_buy": c["buy"],
+        "conf_sell": c["sell"],
+        "count_buy": int(c["cnt_buy"]),
+        "count_sell": int(c["cnt_sell"]),
+        "decision": d,
+        "sl": round(sl, 2),
+        "tp1": round(tp1, 2),
+        "tp2": round(tp2, 2),
+    }
+
+@app.get("/size")
+def size(symbol: str, entry: float = Query(...), sl: float = Query(...), account: float = Query(...), risk_pct: float = Query(1.0)):
+    risk_amt = account * (risk_pct / 100.0)
+    sl_dist = abs(entry - sl)
+    units = 0.0 if sl_dist <= 0 else risk_amt / sl_dist
+    return {"symbol": symbol, "entry": entry, "sl": sl, "account": account, "risk_pct": risk_pct, "units": round(units, 6)}
+
+@app.post("/scan_now_strict")
+def scan_now_strict():
+    sent = []
+    for sym in SYMBOLS:
+        res = analyze_strict(sym)
+        if res["decision"] in ("BUY","SELL"):
+            txt = f"*{sym}* {res['decision']}\nPrice: {res['price']}\nP(up): {res['p_up']}  P(down): {res['p_down']}\nConf: buy={res['count_buy']} sell={res['count_sell']}\nSL: {res['sl']}  TP1: {res['tp1']}  TP2: {res['tp2']}\n{INTERVAL}  {res['time']}"
+            try:
+                asyncio.get_event_loop().run_until_complete(send_telegram(txt))
+                sent.append(sym)
+            except Exception:
+                pass
+    return {"ok": True, "alerts": sent}
