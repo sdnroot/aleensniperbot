@@ -60,7 +60,14 @@ def fetch_td(symbol,period="5d",interval="15m"):
     return None
 import os, warnings, asyncio, aiohttp
 try:
+    try:
     from sklearn.ensemble import RandomForestClassifier
+except ImportError:
+    class RandomForestClassifier:
+        def fit(self,*a,**k): return self
+        def predict_proba(self,X):
+            import numpy as np
+            return np.tile([0.5,0.5], (len(X) if hasattr(X,"__len__") else 1,1))
 except Exception:
     class RandomForestClassifier:
         def fit(self,*a,**k): return self
@@ -79,7 +86,14 @@ _YF=requests.Session(); _YF.headers.update({"User-Agent":"Mozilla/5.0"})
 from fastapi import FastAPI
 from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
-from sklearn.ensemble import RandomForestClassifier
+try:
+    from sklearn.ensemble import RandomForestClassifier
+except ImportError:
+    class RandomForestClassifier:
+        def fit(self,*a,**k): return self
+        def predict_proba(self,X):
+            import numpy as np
+            return np.tile([0.5,0.5], (len(X) if hasattr(X,"__len__") else 1,1))
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 from joblib import dump
