@@ -12,4 +12,4 @@ aiohttp==3.13.2
 
 
 numpy==2.3.3
-peewee==3.17.0
+peewee==3.16.3
