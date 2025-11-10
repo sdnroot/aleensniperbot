@@ -1,156 +1,54 @@
-import os, time, json
-from typing import List, Dict, Any
-import requests
+import os, json, time, urllib.request, urllib.parse
 from fastapi import FastAPI, Query
 
-ALPHAV_KEY = os.getenv("ALPHAV_KEY", "")
-UA = {"User-Agent":"Mozilla/5.0"}
+app = FastAPI(title="Sniper Data API")
+ALPHAV_KEY = os.getenv("ALPHAV_KEY", "5RVL02E162SRP4G7")
 
-app = FastAPI(title="Sniper AI Data API")
+def _get(url, params=None):
+    if params: url += "?" + urllib.parse.urlencode(params)
+    with urllib.request.urlopen(url, timeout=15) as r:
+        return json.loads(r.read().decode())
 
-def _ok(values: List[Dict[str, Any]]) -> Dict[str, Any]:
-    if not values:
-        return {"values": [], "last": None}
-    # ensure newest first
-    values = sorted(values, key=lambda x: x["datetime"], reverse=True)
-    return {"values": values, "last": values[0]["datetime"]}
+def fetch_binance(symbol):
+    pair = symbol.upper() + "USDT" if not symbol.upper().endswith("USDT") else symbol.upper()
+    j = _get("https://api.binance.com/api/v3/klines", {"symbol":pair,"interval":"1m","limit":1})
+    if not j: return {"source":"binance","values":[]}
+    k = j[0]
+    t = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(int(k[0]/1000)))
+    return {"source":"binance","values":[{"datetime":t,"close":k[4]}],"last":t}
 
-def fetch_alphav_xauusd() -> Dict[str, Any]:
-    if not ALPHAV_KEY:
-        return {"error":"ALPHAV_KEY missing"}
-    try:
-        # Intraday FX for XAU/USD
-        url = "https://www.alphavantage.co/query"
-        params = {"function":"FX_INTRADAY","from_symbol":"XAU","to_symbol":"USD","interval":"5min","apikey":ALPHAV_KEY,"outputsize":"compact"}
-        r = requests.get(url, params=params, timeout=15)
-        j = r.json()
-        ts = j.get("Time Series FX (5min)") or {}
-        vals = []
-        for t, ohlc in ts.items():
-            vals.append({"datetime": t, "close": float(ohlc["4. close"])})
-        out = _ok(vals)
-        out["source"] = "alphav"
-        return out
-    except Exception as e:
-        return {"error": str(e)}
+def fetch_yahoo(symbol):
+    j = _get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",{"range":"1d","interval":"1m"})
+    r = (j.get("chart",{}) or {}).get("result",[{}])[0]
+    ts, quotes = r.get("timestamp") or [], (r.get("indicators",{}) or {}).get("quote",[{}])[0]
+    if not ts: return {"source":"yahoo","values":[]}
+    t = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(ts[-1]))
+    return {"source":"yahoo","values":[{"datetime":t,"close":quotes.get('close',[-1])[-1]}],"last":t}
 
-def fetch_yahoo(symbol: str) -> Dict[str, Any]:
-    try:
-        # Yahoo chart API
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-        params = {"range":"1d","interval":"1m"}
-        j = requests.get(url, params=params, headers=UA, timeout=15).json()
-        res = j.get("chart", {}).get("result", [])
-        if not res:
-            return {"error":"no yahoo result"}
-        r0 = res[0]
-        ts = r0.get("timestamp") or []
-        ind = r0.get("indicators", {}).get("quote", [{}])[0]
-        closes = ind.get("close") or []
-        vals = []
-        for t, c in zip(ts, closes):
-            if c is None: 
-                continue
-            iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
-            vals.append({"datetime": iso, "close": float(c)})
-        out = _ok(vals)
-        out["source"] = "yahoo"
-        return out
-    except Exception as e:
-        return {"error": str(e)}
-
-def fetch_binance(symbol: str) -> Dict[str, Any]:
-    try:
-        # Map common symbols to Binance
-        mapping = {
-            "BTC": "BTCUSDT",
-            "ETH": "ETHUSDT",
-        }
-        sy = mapping.get(symbol.upper(), None)
-        if not sy:
-            return {"error":"binance symbol not mapped"}
-        url = "https://api.binance.com/api/v3/klines"
-        params = {"symbol": sy, "interval":"1m", "limit": 50}
-        arr = requests.get(url, params=params, timeout=15).json()
-        vals = []
-        for k in arr:
-            # kline: [open_time, open, high, low, close, ...]
-            ts = int(k[0]) // 1000
-            iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
-            vals.append({"datetime": iso, "close": float(k[4])})
-        out = _ok(vals)
-        out["source"] = "binance"
-        return out
-    except Exception as e:
-        return {"error": str(e)}
-
-def fetch_any(symbol: str) -> Dict[str, Any]:
-    s = symbol.upper()
-    # 1) XAUUSD → AlphaVantage
-    if s in ("XAUUSD", "XAU/USD", "XAUUSD=X", "XAU-USD"):
-        av = fetch_alphav_xauusd()
-        if av.get("values"):
-            return av
-        # fallback to Yahoo: GC=F futures
-        ya = fetch_yahoo("GC=F")
-        if ya.get("values"):
-            return ya
-        return {"error": av.get("error") or ya.get("error") or "no data"}
-
-    # 2) Futures or Yahoo-tickers directly
-    if s in ("GC=F","XAUUSD=X","BTC-USD","ETH-USD"):
-        ya = fetch_yahoo(s)
-        if ya.get("values"):
-            return ya
-        return {"error": ya.get("error") or "no data"}
-
-    # 3) Crypto short symbol → Binance
-    if s in ("BTC","ETH"):
-        bz = fetch_binance(s)
-        if bz.get("values"):
-            return bz
-        # fallback to Yahoo crypto
-        ya = fetch_yahoo(f"{s}-USD")
-        if ya.get("values"):
-            return ya
-        return {"error": bz.get("error") or ya.get("error") or "no data"}
-
-    # Generic Yahoo final try
-    ya = fetch_yahoo(s)
-    if ya.get("values"):
-        return ya
-    return {"error": ya.get("error") or "no data"}
+def fetch_alphav(symbol):
+    j = _get("https://www.alphavantage.co/query",
+             {"function":"FX_INTRADAY","from_symbol":symbol[:3],"to_symbol":symbol[3:],
+              "interval":"5min","apikey":ALPHAV_KEY})
+    ts = j.get("Time Series FX (5min)") or {}
+    if not ts: return {"source":"alphav","values":[]}
+    t, v = next(iter(ts.items()))
+    return {"source":"alphav","values":[{"datetime":t,"close":v.get("4. close")}],"last":t}
 
 @app.get("/health")
-def health():
-    return {"ok": True, "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+def health(): return {"ok":True,"time":time.strftime("%Y-%m-%dT%H:%M:%S")}
 
 @app.get("/routes")
-def routes():
-    return ["/openapi.json","/docs","/health","/routes","/debug","/analyze"]
+def routes(): return [r.path for r in app.routes]
 
 @app.get("/debug")
-def debug(symbol: str = Query(...)):
-    res = fetch_any(symbol)
-    return {
-        "symbol": symbol,
-        "source": res.get("source"),
-        "rows": len(res.get("values", [])),
-        "last": res.get("last"),
-        "error": res.get("error")
-    }
+def debug(symbol:str=Query(...)):
+    if symbol.upper() in {"BTC","ETH"}: r=fetch_binance(symbol)
+    elif len(symbol)==6: r=fetch_alphav(symbol)
+    else: r=fetch_yahoo(symbol)
+    return {"symbol":symbol,"source":r.get("source"),"rows":len(r.get("values",[])),"last":r.get("last")}
 
 @app.get("/analyze")
-def analyze(symbol: str = Query(...)):
-    res = fetch_any(symbol)
-    vals = res.get("values", [])
-    price = float(vals[0]["close"]) if vals else 0.0
-    t = vals[0]["datetime"] if vals else ""
-    return {
-        "symbol": symbol,
-        "time": t,
-        "price": price,
-        "source": res.get("source"),
-        "rule_signal": 0, "ml_pred": 0, "p_up": 0.0, "p_down": 0.0,
-        "decision": "HOLD", "sl": 0.0, "tp1": 0.0, "tp2": 0.0
-    }
+def analyze(symbol:str=Query(...)):
+    r = debug(symbol)
+    price = r.get("values",[{}])[0].get("close",0.0) if r.get("values") else 0.0
+    return {"symbol":symbol,"price":price,"source":r.get("source")}
