@@ -270,7 +270,9 @@ price = float(df['Close'].iloc[-1]) if 'Close' in df.columns and len(df)>0 else 
 t = df.index[-1].isoformat() if len(df)>0 else ""
 price = float(df['Close'].iloc[-1]) if len(df)>0 and 'Close' in df.columns else 0.0
 t = df.index[-1].isoformat() if len(df)>0 else ''
-return {"symbol":symbol, "time":t, "price":price, "rule_signal":rule_signal, "ml_pred":ml_pred, "p_up":p_up, "p_down":p_down, "decision":decision, "sl":sl, "tp1":tp1, "tp2":tp2}
+price = float(df['Close'].iloc[-1]) if len(df)>0 and 'Close' in df.columns else 0.0
+t = df.index[-1].isoformat() if len(df)>0 else ''
+return {"symbol":symbol,"time":t,"price":price,"rule_signal":rule_signal,"ml_pred":ml_pred,"p_up":p_up,"p_down":p_down,"decision":decision,"sl":sl,"tp1":tp1,"tp2":tp2}
     px = float(df["Close"].iloc[-1])
     return {"symbol": symbol, "price": px, "time": df.index[-1].isoformat()}
 
@@ -763,3 +765,6 @@ from fastapi import Query
 def debug_data(symbol: str = Query(...)):
     df = fetch_prices(symbol)
     return {"symbol":symbol, "rows": int(len(df)), "cols": list(df.columns), "last": (df.index[-1].isoformat() if len(df)>0 else None)}
+
+TD_KEY=os.getenv('TWELVEDATA_KEY','1568d10968484808a32195ae759c0a17')
+SYMBOL_MAP_TD={'GC=F':'XAU/USD','XAUUSD=X':'XAU/USD','BTC-USD':'BTC/USD','ETH-USD':'ETH/USD'}
