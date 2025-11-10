@@ -1,8 +1,21 @@
 import warnings; warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
 import os, requests
 TD_KEY=os.getenv("TWELVEDATA_KEY","")
-def fetch_prices(symbol,period="5d",interval="15m"):
+def fetch_td(symbol,period="5d",interval="15m"):
     import yfinance as yf, pandas as pd
+import os,requests,pandas as pd
+TD_KEY=os.getenv("TWELVEDATA_KEY","")
+def fetch_td(symbol,interval="15min",outputsize=200):
+    if not TD_KEY: return None
+    url="https://api.twelvedata.com/time_series"
+    r=requests.get(url,params={"symbol":symbol,"interval":interval,"outputsize":outputsize,"apikey":TD_KEY},timeout=20)
+    j=r.json(); v=j.get("values",[])
+    if not v: return None
+    df=pd.DataFrame(v); df["datetime"]=pd.to_datetime(df["datetime"])
+    df=df.sort_values("datetime").set_index("datetime")
+    for c in ["open","high","low","close","volume"]: df[c]=pd.to_numeric(df[c], errors="coerce")
+    df.rename(columns={"close":"Close","open":"Open","high":"High","low":"Low","volume":"Volume"}, inplace=True)
+    return df
     try:
         t=yf.Ticker(symbol)
         df=t.history(period=period, interval=interval, auto_adjust=False)
@@ -24,7 +37,7 @@ def fetch_prices(symbol,period="5d",interval="15m"):
     return None
 import os, time, requests
 TD_KEY=os.getenv("TWELVEDATA_KEY","")
-def fetch_prices(symbol,period="5d",interval="15m"):
+def fetch_td(symbol,period="5d",interval="15m"):
     try:
         t=yf.Ticker(symbol, session=_YF)
         df=t.history(period=period, interval=interval, auto_adjust=False)
@@ -78,7 +91,7 @@ TELEGRAM_BOT_TOKEN = "8420126239:AAG7NuXxk4uM9Izjh1xzw3jbfhwu75vd7QM"
 TELEGRAM_CHAT_ID = "5957769856"
 
 # ---- CONFIG ----
-SYMBOLS = [s.strip() for s in os.getenv("SYMBOLS","XAUUSD=X,BTC-USD,ETH-USD").split(",") if s.strip()]
+SYMBOLS = [s.strip() for s in os.getenv("SYMBOLS","GC=F,BTC-USD,ETH-USD").split(",") if s.strip()]
 INTERVAL = "15m"
 LOOKBACK_DAYS = 60
 SCHEDULE_MINUTES = 3
@@ -91,7 +104,7 @@ LAST_SIGNAL_TS: Dict[str, pd.Timestamp] = {}
 
 def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     period = f"{period_days}d"
-    df = fetch_prices(symbol, period=period, interval=interval, auto_adjust=True, progress=False)
+    df = fetch_td(symbol, period=period, interval=interval, auto_adjust=True, progress=False)
     if df is None or df.empty:
         return pd.DataFrame()
     df = df.rename(columns={c:c.capitalize() for c in df.columns})
@@ -368,7 +381,7 @@ def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     for sym in try_symbols:
         for attempt in range(attempts):
             try:
-                df = fetch_prices(sym, period=period, interval=interval, auto_adjust=True, progress=False)
+                df = fetch_td(sym, period=period, interval=interval, auto_adjust=True, progress=False)
                 # sometimes yf.download returns (df, info) tuple in old versions
                 if isinstance(df, tuple) and len(df) > 0:
                     df = df[0]
