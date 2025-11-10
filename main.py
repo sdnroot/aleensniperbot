@@ -46,6 +46,15 @@ def fetch_prices(symbol,period="5d",interval="15m"):
     except Exception: pass
     return None
 import os, warnings, asyncio, aiohttp
+try:
+    from sklearn.ensemble import RandomForestClassifier
+except Exception:
+    class RandomForestClassifier:
+        def fit(self,*a,**k): return self
+        def predict_proba(self,X):
+            import numpy as np
+            X = np.zeros((len(X),1)) if hasattr(X,"__len__") else np.zeros((1,1))
+            return np.tile([0.5,0.5], (len(X),1))
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 import numpy as np
