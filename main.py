@@ -262,7 +262,9 @@ def health():
 def price(symbol: str):
     df = fetch_ohlc(symbol, 2, INTERVAL)
     if df.empty:
-        return {"symbol": symbol, "price": None, "time": None}
+        price = float(df['Close'].iloc[-1]) if 'Close' in df.columns and len(df)>0 else 0.0
+t = df.index[-1].isoformat() if len(df)>0 else ""
+return {"symbol":symbol,"time":t,"price":price,"rule_signal":rule_signal,"ml_pred":ml_pred,"p_up":p_up,"p_down":p_down,"decision":decision,"sl":sl,"tp1":tp1,"tp2":tp2}
     px = float(df["Close"].iloc[-1])
     return {"symbol": symbol, "price": px, "time": df.index[-1].isoformat()}
 
@@ -749,3 +751,9 @@ def scan_now_strict():
             except Exception:
                 pass
     return {"ok": True, "alerts": sent}
+
+from fastapi import Query
+@app.get('/debug')
+def debug_data(symbol: str = Query(...)):
+    df = fetch_prices(symbol)
+    return {"symbol":symbol, "rows": int(len(df)), "cols": list(df.columns), "last": (df.index[-1].isoformat() if len(df)>0 else None)}
