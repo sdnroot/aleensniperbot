@@ -5283,3 +5283,301 @@ Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
 
 1 Failed download:
 ['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'ETH-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['ETH-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+INFO:     127.0.0.1:50210 - "GET /health HTTP/1.1" 200 OK
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GC=F' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GC=F']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'GLD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['GLD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
+
+1 Failed download:
+['BTC-USD']: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+Failed to get ticker 'BTC-USD' reason: Expecting value: line 1 column 1 (char 0)
