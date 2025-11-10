@@ -1,4 +1,27 @@
 import warnings; warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
+import os, time, requests
+TD_KEY=os.getenv("TWELVEDATA_KEY","")
+def fetch_prices(symbol,period="5d",interval="15m"):
+    try:
+        t=yf.Ticker(symbol, session=_YF)
+        df=t.history(period=period, interval=interval, auto_adjust=False)
+        if df is not None and len(df)>0: return df
+    except Exception as e: pass
+    if not TD_KEY: return None
+    try:
+        url="https://api.twelvedata.com/time_series"
+        params={"symbol":symbol,"interval":interval,"outputsize":500,"apikey":TD_KEY}
+        r=requests.get(url, params=params, timeout=20)
+        j=r.json(); d=j.get("values",[])
+        import pandas as pd
+        if d:
+            df=pd.DataFrame(d); df["datetime"]=pd.to_datetime(df["datetime"])
+            df=df.sort_values("datetime").set_index("datetime");
+            for c in ["open","high","low","close","volume"]: df[c]=pd.to_numeric(df[c], errors="coerce")
+            df.rename(columns={"close":"Close","open":"Open","high":"High","low":"Low","volume":"Volume"}, inplace=True)
+            return df
+    except Exception: pass
+    return None
 import os, warnings, asyncio, aiohttp
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
@@ -36,7 +59,7 @@ LAST_SIGNAL_TS: Dict[str, pd.Timestamp] = {}
 
 def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     period = f"{period_days}d"
-    df = yf.download(session=_YF, progress=False, symbol, period=period, interval=interval, auto_adjust=True, progress=False)
+    df = fetch_prices(symbol, period=period, interval=interval, auto_adjust=True, progress=False)
     if df is None or df.empty:
         return pd.DataFrame()
     df = df.rename(columns={c:c.capitalize() for c in df.columns})
@@ -313,7 +336,7 @@ def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     for sym in try_symbols:
         for attempt in range(attempts):
             try:
-                df = yf.download(session=_YF, progress=False, sym, period=period, interval=interval, auto_adjust=True, progress=False)
+                df = fetch_prices(sym, period=period, interval=interval, auto_adjust=True, progress=False)
                 # sometimes yf.download returns (df, info) tuple in old versions
                 if isinstance(df, tuple) and len(df) > 0:
                     df = df[0]
