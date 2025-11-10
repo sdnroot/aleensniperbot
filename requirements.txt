@@ -3,7 +3,7 @@ uvicorn==0.22.0
 requests==2.31.0
 APScheduler==3.10.1
 python-telegram-bot==20.6
-yfinance==0.2.38
+yfinance==0.2.28
 pandas==2.3.3
 numpy==2.3.3
 aiohttp==3.13.2
@@ -12,3 +12,4 @@ aiohttp==3.13.2
 
 
 numpy==2.3.3
+peewee==3.17.0
