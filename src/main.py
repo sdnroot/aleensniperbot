@@ -2,7 +2,6 @@ import os, datetime as dt, requests, pandas as pd
 from fastapi import FastAPI, Query
 
 app = FastAPI(title="Sniper AI Bot", version="1.0")
-
 TD_KEY = os.getenv("TWELVEDATA_KEY","")
 
 ALIASES = {
@@ -35,6 +34,10 @@ def td_fetch(symbol:str, interval:str="1h", size:int=200)->pd.DataFrame:
 @app.get("/health")
 def health():
     return {"ok": True, "time": dt.datetime.utcnow().isoformat()+"Z"}
+
+@app.get("/routes")
+def routes():
+    return [getattr(r, "path", None) for r in app.router.routes]
 
 @app.get("/debug")
 def debug(symbol: str = Query(...), interval: str = Query("1h")):
