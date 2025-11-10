@@ -18,7 +18,8 @@ def td_fetch(symbol:str, interval:str="1h", size:int=200)->pd.DataFrame:
     url="https://api.twelvedata.com/time_series"
     params={"symbol":_norm(symbol),"interval":interval,"outputsize":size,"apikey":TD_KEY}
     try:
-        r=requests.get(url,params=params,timeout=20); j=r.json(); v=j.get("values",[])
+        r=requests.get(url,params=params,timeout=20)
+        j=r.json(); v=j.get("values",[])
         if not v: return pd.DataFrame()
         df=pd.DataFrame(v)
         if "datetime" in df.columns:
@@ -33,20 +34,20 @@ def td_fetch(symbol:str, interval:str="1h", size:int=200)->pd.DataFrame:
 
 @app.get("/health")
 def health():
-    return {"ok":True,"time":dt.datetime.utcnow().isoformat()+"Z"}
+    return {"ok": True, "time": dt.datetime.utcnow().isoformat()+"Z"}
 
 @app.get("/debug")
 def debug(symbol: str = Query(...), interval: str = Query("1h")):
-    df=td_fetch(symbol,interval=interval,size=200)
-    last=df.index[-1].isoformat() if len(df)>0 else None
-    cols=list(df.columns) if len(df)>0 else []
-    return {"symbol":_norm(symbol),"interval":interval,"rows":int(len(df)),"cols":cols,"last":last}
+    df = td_fetch(symbol, interval=interval, size=200)
+    last = df.index[-1].isoformat() if len(df)>0 else None
+    cols = list(df.columns) if len(df)>0 else []
+    return {"symbol": _norm(symbol), "interval": interval, "rows": int(len(df)), "cols": cols, "last": last}
 
 @app.get("/analyze")
 def analyze(symbol: str = Query(...), interval: str = Query("1h")):
-    df=td_fetch(symbol,interval=interval,size=200)
-    price=float(df["Close"].iloc[-1]) if len(df)>0 and "Close" in df.columns else 0.0
-    t=df.index[-1].isoformat() if len(df)>0 else ""
-    return {"symbol":_norm(symbol),"interval":interval,"time":t,"price":price,
-            "rule_signal":0,"ml_pred":0,"p_up":0.0,"p_down":0.0,
-            "decision":"HOLD","sl":0.0,"tp1":0.0,"tp2":0.0}
+    df = td_fetch(symbol, interval=interval, size=200)
+    price = float(df["Close"].iloc[-1]) if len(df)>0 and "Close" in df.columns else 0.0
+    t = df.index[-1].isoformat() if len(df)>0 else ""
+    return {"symbol": _norm(symbol), "interval": interval, "time": t, "price": price,
+            "rule_signal": 0, "ml_pred": 0, "p_up": 0.0, "p_down": 0.0,
+            "decision": "HOLD", "sl": 0.0, "tp1": 0.0, "tp2": 0.0}

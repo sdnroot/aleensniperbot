@@ -1,1 +1,1 @@
-from src.main import app  # expose FastAPI app for Render
+from src.main import app
