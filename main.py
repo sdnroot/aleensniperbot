@@ -1,3 +1,4 @@
+import typing
 import warnings; warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
 import os, requests
 TD_KEY=os.getenv("TWELVEDATA_KEY","")
@@ -323,90 +324,39 @@ def backtest(symbol: str, days: int = LOOKBACK_DAYS, interval: str = INTERVAL, u
 
 @app.get("/analyze", response_model=AnalyzeOut)
 def analyze(symbol: str):
-    df = fetch_ohlc(symbol, 5, INTERVAL)
-    if df.empty:
-        return AnalyzeOut(symbol=symbol, time="", price=0.0, rule_signal=0, ml_pred=0, p_up=0.0, p_down=0.0, decision="HOLD", sl=0.0, tp1=0.0, tp2=0.0)
-    df = add_features(df)
-    row = df.iloc[-1]
-    rule_sig = sniper_rule_signal(row)
-    ml = model_predict(symbol, row)
-    decision = "HOLD"
-    if rule_sig == 1 and (ml["pred"]==1 or ml["p_up"]>=0.55):
-        decision = "BUY"
-    elif rule_sig == -1 and (ml["pred"]==-1 or ml["p_down"]>=0.55):
-        decision = "SELL"
-    atr = float(row["atr"])
-    px = float(row["Close"])
-    sl_raw, tp_raw = sl_tp_from_atr(px, atr)
-    if decision == "BUY":
-        sl = px - sl_raw
-        tp1 = px + tp_raw
-        tp2 = px + 1.5*tp_raw
-    elif decision == "SELL":
-        sl = px + sl_raw
-        tp1 = px - tp_raw
-        tp2 = px - 1.5*tp_raw
-    else:
-        sl, tp1, tp2 = 0.0, 0.0, 0.0
-    return AnalyzeOut(symbol=symbol, time=df.index[-1].isoformat(), price=px, rule_signal=rule_sig, ml_pred=ml["pred"], p_up=round(ml["p_up"],3), p_down=round(ml["p_down"],3), decision=decision, sl=round(sl,2), tp1=round(tp1,2), tp2=round(tp2,2))
-
-
-def job_scan_and_alert():
-    """
-    Clean, well-formed scan loop:
-    - for each symbol ensure model exists
-    - call analyze() which returns dict or Pydantic object
-    - check confirmations safely and send telegram only if gated
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    for sym in SYMBOLS:
+    from fastapi import Query
+    symbol = locals().get('symbol') if 'symbol' in locals() else None
+    # accept query param if signature didn't have it
+    try:
+        if symbol is None:
+            import inspect
+            frame = inspect.currentframe()
+            symbol = frame.f_back.f_locals.get('symbol', None)
+    except Exception:
+        pass
+    if not symbol:
+        from fastapi import Request
+        # fallback: pull from request.query_params if available
         try:
-            # ensure model available
-            if sym not in MODELS:
-                df = build_dataset(sym, min(LOOKBACK_DAYS, 30), INTERVAL)
-                if len(df) > 200:
-                    fit_model(sym, df)
-
-            res = analyze(sym)
-            # normalize res to dict
-            if hasattr(res, "__dict__"):
-                res = res.__dict__
+            req: Request = locals().get('request')  # if handler had request
+            symbol = req.query_params.get('symbol')
         except Exception:
-            # skip symbol on any analysis error
-            continue
-
-        # safe confirmations extraction
-        try:
-            conf = res.get("confirmations", {}) if isinstance(res, dict) else {}
-            count_buy = int(conf.get("count_buy", 0))
-            count_sell = int(conf.get("count_sell", 0))
-        except Exception:
-            count_buy = 0
-            count_sell = 0
-
-        # gated alert: require >=4 confirmations
-        if (count_buy >= 4) or (count_sell >= 4):
-            try:
-                ts_key = pd.Timestamp(res.get("time") or datetime.utcnow().isoformat())
-            except Exception:
-                ts_key = pd.Timestamp(datetime.utcnow())
-            last_ts = LAST_SIGNAL_TS.get(sym)
-            if last_ts is None or ts_key > last_ts:
-                try:
-                    text = (f"*{sym}* {res.get('decision','HOLD')}\n"
-                            f"Price: {float(res.get('price',0)):.2f}\n"
-                            f"Rule: {res.get('rule_signal',0)}  ML: {res.get('ml_pred',0)}  P(up): {res.get('p_up',0.0):.2f}  P(down): {res.get('p_down',0.0):.2f}\n"
-                            f"SL: {float(res.get('sl',0)):.2f}  TP1: {float(res.get('tp1',0)):.2f}  TP2: {float(res.get('tp2',0)):.2f}\n"
-                            f"{INTERVAL}  {res.get('time','')}")
-                    loop.run_until_complete(send_telegram(text))
-                    LAST_SIGNAL_TS[sym] = ts_key
-                except Exception:
-                    # if telegram fails continue
-                    continue
-scheduler = BackgroundScheduler(daemon=True, timezone="UTC")
-scheduler.add_job(job_scan_and_alert, "interval", minutes=SCHEDULE_MINUTES, next_run_time=datetime.utcnow()+timedelta(seconds=5))
-scheduler.start()
+            symbol = None
+    symbol = symbol or 'GC=F'
+    df = fetch_prices_td(symbol)
+    price = float(df['Close'].iloc[-1]) if len(df)>0 and 'Close' in df.columns else 0.0
+    t = df.index[-1].isoformat() if len(df)>0 else ''
+    # keep existing decision variables if defined earlier, else defaults
+    rule_signal = locals().get('rule_signal', 0)
+    ml_pred = locals().get('ml_pred', 0)
+    p_up = locals().get('p_up', 0.0)
+    p_down = locals().get('p_down', 0.0)
+    decision = locals().get('decision', 'HOLD')
+    sl = locals().get('sl', 0.0)
+    tp1 = locals().get('tp1', 0.0)
+    tp2 = locals().get('tp2', 0.0)
+    return {"symbol":symbol,"time":t,"price":price,"rule_signal":rule_signal,"ml_pred":ml_pred,
+            "p_up":p_up,"p_down":p_down,"decision":decision,"sl":sl,"tp1":tp1,"tp2":tp2}
 
 @app.get("/")
 def root():
@@ -768,3 +718,34 @@ def debug_data(symbol: str = Query(...)):
 
 TD_KEY=os.getenv('TWELVEDATA_KEY','1568d10968484808a32195ae759c0a17')
 SYMBOL_MAP_TD={'GC=F':'XAU/USD','XAUUSD=X':'XAU/USD','BTC-USD':'BTC/USD','ETH-USD':'ETH/USD'}
+
+TD_KEY=os.getenv('TWELVEDATA_KEY','1568d10968484808a32195ae759c0a17')
+SYMBOL_MAP_TD={'GC=F':'XAU/USD','XAUUSD=X':'XAU/USD','BTC-USD':'BTC/USD','ETH-USD':'ETH/USD'}
+
+def fetch_prices_td(symbol:str, interval:str='15min'):
+    sym = SYMBOL_MAP_TD.get(symbol, symbol)
+    try:
+        r = requests.get('https://api.twelvedata.com/time_series',
+                         params={'symbol':sym,'interval':interval,'outputsize':200,'apikey':TD_KEY},
+                         timeout=20)
+        j = r.json()
+        v = j.get('values') or []
+        if not v: return pd.DataFrame()
+        df = pd.DataFrame(v)
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        df = df.sort_values('datetime').set_index('datetime')
+        for c in ['open','high','low','close','volume']:
+            df[c] = pd.to_numeric(df[c], errors='coerce')
+        df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+def __debug_prices(symbol:str):
+    df = fetch_prices_td(symbol)
+    return {"symbol":symbol,"rows":int(len(df)),"cols":(list(df.columns) if len(df)>0 else []),
+            "last":(df.index[-1].isoformat() if len(df)>0 else None)}
+try:
+    app.router.add_api_route('/debug', lambda symbol: __debug_prices(symbol), methods=['GET'])
+except Exception:
+    pass
