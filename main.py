@@ -59,6 +59,27 @@ def fetch_td(symbol,period="5d",interval="15m"):
     except Exception: pass
     return None
 import os, warnings, asyncio, aiohttp
+TD_KEY=os.getenv("TWELVEDATA_KEY","1568d10968484808a32195ae759c0a17")
+TELEGRAM_BOT_TOKEN=os.getenv("TELEGRAM_BOT_TOKEN","8420126239:AAG7NuXxk4uM9Izjh1xzw3jbfhwu75vd7QM")
+TELEGRAM_CHAT_ID=int(os.getenv("TELEGRAM_CHAT_ID","5957769856"))
+SYMBOL_MAP_TD={"GC=F":"XAU/USD","GC=F":"XAU/USD","BTC-USD":"BTC/USD","ETH-USD":"ETH/USD"}
+def _td_symbol(s): return SYMBOL_MAP_TD.get(s,s)
+def fetch_prices(symbol,period="5d",interval="15m"):
+    import yfinance as yf, pandas as pd, requests
+    try:
+        df=yf.fetch_prices(symbol)
+        if df is not None and len(df)>0: return df
+    except Exception: pass
+    if not TD_KEY: return None
+    url="https://api.twelvedata.com/time_series"
+    r=requests.get(url, params={"symbol":_td_symbol(symbol),"interval":"15min","outputsize":200,"apikey":TD_KEY}, timeout=20)
+    j=r.json(); v=j.get("values",[])
+    if not v: return None
+    df=pd.DataFrame(v); import pandas as pd; df["datetime"]=pd.to_datetime(df["datetime"])
+    df=df.sort_values("datetime").set_index("datetime")
+    for c in ["open","high","low","close","volume"]: df[c]=pd.to_numeric(df[c], errors="coerce")
+    df.rename(columns={"close":"Close","open":"Open","high":"High","low":"Low","volume":"Volume"}, inplace=True)
+    return df
 try:
     try:
     try:
