@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 
 import yfinance as yf
+import requests
+_YF=requests.Session(); _YF.headers.update({"User-Agent":"Mozilla/5.0"})
 from fastapi import FastAPI
 from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -21,7 +23,7 @@ TELEGRAM_BOT_TOKEN = "8420126239:AAG7NuXxk4uM9Izjh1xzw3jbfhwu75vd7QM"
 TELEGRAM_CHAT_ID = "5957769856"
 
 # ---- CONFIG ----
-SYMBOLS = [s.strip() for s in os.getenv("SYMBOLS","GC=F,BTC-USD,ETH-USD").split(",") if s.strip()]
+SYMBOLS = [s.strip() for s in os.getenv("SYMBOLS","XAUUSD=X,BTC-USD,ETH-USD").split(",") if s.strip()]
 INTERVAL = "15m"
 LOOKBACK_DAYS = 60
 SCHEDULE_MINUTES = 3
@@ -34,7 +36,7 @@ LAST_SIGNAL_TS: Dict[str, pd.Timestamp] = {}
 
 def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     period = f"{period_days}d"
-    df = yf.download(symbol, period=period, interval=interval, auto_adjust=True, progress=False)
+    df = yf.download(session=_YF, progress=False, symbol, period=period, interval=interval, auto_adjust=True, progress=False)
     if df is None or df.empty:
         return pd.DataFrame()
     df = df.rename(columns={c:c.capitalize() for c in df.columns})
@@ -304,14 +306,14 @@ def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     attempts = 2
     # symbol fallbacks map
     fallbacks = {
-        "GC=F": ["GC=F", "GLD"],
-        "XAUUSD": ["GC=F", "GLD"]
+        "XAUUSD=X": ["XAUUSD=X", "GLD"],
+        "XAUUSD": ["XAUUSD=X", "GLD"]
     }
     try_symbols = [symbol] + fallbacks.get(symbol, [])
     for sym in try_symbols:
         for attempt in range(attempts):
             try:
-                df = yf.download(sym, period=period, interval=interval, auto_adjust=True, progress=False)
+                df = yf.download(session=_YF, progress=False, sym, period=period, interval=interval, auto_adjust=True, progress=False)
                 # sometimes yf.download returns (df, info) tuple in old versions
                 if isinstance(df, tuple) and len(df) > 0:
                     df = df[0]
