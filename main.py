@@ -62,7 +62,6 @@ import os, warnings, asyncio, aiohttp
 try:
     try:
     try:
-    from sklearn.ensemble import RandomForestClassifier
 except Exception:
     class RandomForestClassifier:
         def fit(self,*a,**k): return self
@@ -95,7 +94,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
 try:
-    from sklearn.ensemble import RandomForestClassifier
 except ImportError:
     class RandomForestClassifier:
         def fit(self,*a,**k): return self
