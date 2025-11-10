@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 import numpy as np
 import pandas as pd
-import pandas_ta as ta
+
 import yfinance as yf
 from fastapi import FastAPI
 from pydantic import BaseModel
