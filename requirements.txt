@@ -6,4 +6,3 @@ python-telegram-bot==20.6
 yfinance==0.2.25
 pandas==2.2.2
 numpy==1.26.4
-ta==0.11.0
