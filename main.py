@@ -324,37 +324,31 @@ def backtest(symbol: str, days: int = LOOKBACK_DAYS, interval: str = INTERVAL, u
 
 @app.get("/analyze", response_model=AnalyzeOut)
 def analyze(symbol: str):
-    from fastapi import Query
-    symbol = locals().get('symbol') if 'symbol' in locals() else None
-    # accept query param if signature didn't have it
+    # unified data fetch from TwelveData
     try:
-        if symbol is None:
-            import inspect
-            frame = inspect.currentframe()
-            symbol = frame.f_back.f_locals.get('symbol', None)
+        # get 'symbol' from function args if present, else from query
+        if 'symbol' not in locals():
+            from fastapi import Request
+        pass
     except Exception:
         pass
-    if not symbol:
-        from fastapi import Request
-        # fallback: pull from request.query_params if available
-        try:
-            req: Request = locals().get('request')  # if handler had request
-            symbol = req.query_params.get('symbol')
-        except Exception:
-            symbol = None
+    try:
+        symbol  # noqa
+    except NameError:
+        # fallback query read
+        import inspect
+        frame = inspect.currentframe()
+        symbol = frame.f_back.f_locals.get('symbol', None)
     symbol = symbol or 'GC=F'
     df = fetch_prices_td(symbol)
     price = float(df['Close'].iloc[-1]) if len(df)>0 and 'Close' in df.columns else 0.0
     t = df.index[-1].isoformat() if len(df)>0 else ''
-    # keep existing decision variables if defined earlier, else defaults
-    rule_signal = locals().get('rule_signal', 0)
-    ml_pred = locals().get('ml_pred', 0)
-    p_up = locals().get('p_up', 0.0)
-    p_down = locals().get('p_down', 0.0)
-    decision = locals().get('decision', 'HOLD')
-    sl = locals().get('sl', 0.0)
-    tp1 = locals().get('tp1', 0.0)
-    tp2 = locals().get('tp2', 0.0)
+    rule_signal = 0
+    ml_pred = 0
+    p_up = 0.0
+    p_down = 0.0
+    decision = 'HOLD'
+    sl = tp1 = tp2 = 0.0
     return {"symbol":symbol,"time":t,"price":price,"rule_signal":rule_signal,"ml_pred":ml_pred,
             "p_up":p_up,"p_down":p_down,"decision":decision,"sl":sl,"tp1":tp1,"tp2":tp2}
 
