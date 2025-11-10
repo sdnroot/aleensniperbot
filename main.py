@@ -1,4 +1,27 @@
 import warnings; warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
+import os, requests
+TD_KEY=os.getenv("TWELVEDATA_KEY","")
+def fetch_prices(symbol,period="5d",interval="15m"):
+    import yfinance as yf, pandas as pd
+    try:
+        t=yf.Ticker(symbol)
+        df=t.history(period=period, interval=interval, auto_adjust=False)
+        if df is not None and len(df)>0: return df
+    except Exception: pass
+    if not TD_KEY: return None
+    try:
+        url="https://api.twelvedata.com/time_series"
+        params={"symbol":symbol,"interval":interval,"outputsize":500,"apikey":TD_KEY}
+        r=requests.get(url, params=params, timeout=20)
+        j=r.json(); d=j.get("values",[])
+        if d:
+            df=pd.DataFrame(d); df["datetime"]=pd.to_datetime(df["datetime"])
+            df=df.sort_values("datetime").set_index("datetime");
+            for c in ["open","high","low","close","volume"]: df[c]=pd.to_numeric(df[c], errors="coerce")
+            df.rename(columns={"close":"Close","open":"Open","high":"High","low":"Low","volume":"Volume"}, inplace=True)
+            return df
+    except Exception: pass
+    return None
 import os, time, requests
 TD_KEY=os.getenv("TWELVEDATA_KEY","")
 def fetch_prices(symbol,period="5d",interval="15m"):
