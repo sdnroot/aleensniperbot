@@ -7,3 +7,5 @@ yfinance==0.2.25
 pandas==2.2.2
 numpy==1.26.4
 aiohttp==3.9.5
+
+aiohttp==3.9.5
