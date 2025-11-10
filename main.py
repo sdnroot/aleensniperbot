@@ -361,8 +361,8 @@ def fetch_ohlc(symbol: str, period_days: int, interval: str) -> pd.DataFrame:
     attempts = 2
     # symbol fallbacks map
     fallbacks = {
-        "XAUUSD=X": ["XAUUSD=X", "GLD"],
-        "XAUUSD": ["XAUUSD=X", "GLD"]
+        "GC=F": ["GC=F", "GLD"],
+        "XAUUSD": ["GC=F", "GLD"]
     }
     try_symbols = [symbol] + fallbacks.get(symbol, [])
     for sym in try_symbols:
