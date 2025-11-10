@@ -71,3 +71,24 @@ def analyze(symbol: str = Query(...)):
         "p_up": p_up, "p_down": p_down, "decision": decision,
         "sl": sl, "tp1": tp1, "tp2": tp2
     }
+
+import os, requests, pandas as pd
+_TD_KEY = os.getenv("TWELVEDATA_KEY","1568d10968484808a32195ae759c0a17")
+_SYM = {"GC=F":"XAU/USD","XAUUSD=X":"XAU/USD","XAUUSD":"XAU/USD","XAU/USD":"XAU/USD",
+        "BTC-USD":"BTC/USD","BTC/USD":"BTC/USD","ETH-USD":"ETH/USD","ETH/USD":"ETH/USD"}
+def _td_fetch(symbol:str, interval:str="1h"):
+    sym = _SYM.get(symbol, symbol)
+    try:
+        r = requests.get("https://api.twelvedata.com/time_series",
+                         params={"symbol":sym,"interval":interval,"outputsize":200,"apikey":_TD_KEY},
+                         timeout=20)
+        j = r.json(); v = j.get("values") or []
+        if not v: return pd.DataFrame()
+        df = pd.DataFrame(v)
+        df["datetime"]=pd.to_datetime(df["datetime"])
+        df = df.sort_values("datetime").set_index("datetime")
+        for c in ["open","high","low","close","volume"]:
+            df[c]=pd.to_numeric(df[c], errors="coerce")
+        return df.rename(columns={"open":"Open","high":"High","low":"Low","close":"Close","volume":"Volume"})
+    except Exception:
+        return pd.DataFrame()
