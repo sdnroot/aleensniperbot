@@ -1,3 +1,4 @@
+import warnings; warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
 import os, warnings, asyncio, aiohttp
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
