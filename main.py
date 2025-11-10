@@ -61,7 +61,15 @@ def fetch_td(symbol,period="5d",interval="15m"):
 import os, warnings, asyncio, aiohttp
 try:
     try:
+    try:
     from sklearn.ensemble import RandomForestClassifier
+except Exception:
+    class RandomForestClassifier:
+        def fit(self,*a,**k): return self
+        def predict_proba(self,X):
+            import numpy as np
+            n=len(X) if hasattr(X,"__len__") else 1
+            return np.tile([0.5,0.5],(n,1))
 except ImportError:
     class RandomForestClassifier:
         def fit(self,*a,**k): return self
