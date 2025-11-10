@@ -4,6 +4,7 @@ from fastapi import FastAPI, Query
 app = FastAPI(title="Sniper AI Bot", version="1.0")
 
 TD_KEY = os.getenv("TWELVEDATA_KEY","")
+
 ALIASES = {
     "GC=F":"XAU/USD","XAUUSD=X":"XAU/USD","XAUUSD":"XAU/USD","XAU/USD":"XAU/USD",
     "BTC-USD":"BTC/USD","BTC/USD":"BTC/USD","ETH-USD":"ETH/USD","ETH/USD":"ETH/USD",
