@@ -264,6 +264,8 @@ def price(symbol: str):
     if df.empty:
         price = float(df['Close'].iloc[-1]) if 'Close' in df.columns and len(df)>0 else 0.0
 t = df.index[-1].isoformat() if len(df)>0 else ""
+price = float(df['Close'].iloc[-1]) if 'Close' in df.columns and len(df)>0 else 0.0
+t = df.index[-1].isoformat() if len(df)>0 else ""
 return {"symbol":symbol,"time":t,"price":price,"rule_signal":rule_signal,"ml_pred":ml_pred,"p_up":p_up,"p_down":p_down,"decision":decision,"sl":sl,"tp1":tp1,"tp2":tp2}
     px = float(df["Close"].iloc[-1])
     return {"symbol": symbol, "price": px, "time": df.index[-1].isoformat()}
